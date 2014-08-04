@@ -1,34 +1,5 @@
-function initializeObject(file_path)
+function initializeObject(obj,notes)
 
-
-
-
-%TODO: The code below needs to be translated
-
-%function [tsq_struct,extras] = TDT_readTankBlockHeader(c_or_tank_path,blockNr,forceReload,eventGet)
-%TDT_readTankBlockHeader Retrieve block header information
-%
-%   NORMAL USAGE
-% 	[tsq_struct,extras] = TDT_readTankBlockHeader(c_or_tank_path,blockNr,*forceReload,*eventGet)
-%
-%   QUICK USAGE
-%   [tsq_struct,extras] = TDT_readTankBlockHeader(c_or_tank_path,blockNr,'check',*eventGet)
-%
-% INPUTS
-% =========================================================================
-% c_or_tank_path : C constants structure or path to tank
-% blockNr        : block number (numeric)
-%
-% OPTIONAL INPUTS
-% =========================================================================
-% forceReload    : (default false), if true reloads header info from file,
-%                  ALSO
-%                  In addition an input of 'check' will return the outputs
-%                  if in memory or file, otherwise it will return a logical
-%                  false for tsq_struct and a numerical empty extras -> []
-% eventGet       : (default ''), if not empty returns the specific header
-%                   event requested instead of a structure array
-%
 % OUTPUTS
 % =========================================================================
 % tsq_struct - (structure array) OR (false) OR (structure)
@@ -85,21 +56,9 @@ function initializeObject(file_path)
 %   TDT_eventTypeToString
 %   TDT_getNotes
 
-if ~exist('forceReload','var')
-    forceReload = false;
-end
-
-if ~exist('eventGet','var')
-    eventGet = '';
-end
-
-persistent tsqStructPersistent extrasPersistent tsqPathPersistent
 
 %CONSTANTS
 %==========================================================================
-MAT_VERSION = 2.4; %IMPORTANT: Use this to force updating of files
-%saved on disk. Changing this value forces reloading. Increment by
-%some value to avoid collisions
 ADDL_SORT_CODE_OFFSET = 1023; %amount to correct for sort codes
 % -2 => where is this coming from?????,
 % +1 => for a null at the beginning of the sort file
@@ -118,78 +77,19 @@ SIZE_SC_FACTOR  = {1        1         2      4      0.5};
 
 WORDS_PER_ENTRY = 10; %See format in TDT\private\TDT_format_notes
 
-%Loading the path information
-fStruct = TDT_getBlockFiles(c_or_tank_path,blockNr);
-
-if ischar(forceReload)
-    forceReload = false;
-    isCheck     = true;
-else
-    isCheck     = false;
-end
-
-if ~forceReload && strcmp(tsqPathPersistent,fStruct.header_path)
-    tsq_struct = tsqStructPersistent;
-    extras     = extrasPersistent;
-    tsq_struct = filterTSQforEvent(tsq_struct,extras,eventGet);
-    return
-end
-
-
-%Setting up save information & reloading from file
-header_save_path = ''; %If not defined we won't save
-header_save_root = fStruct.header_save_root;
-if ~isempty(header_save_root)
-    header_save_filename = sprintf('Block-%d.mat',blockNr);
-    header_save_path = fullfile(header_save_root,header_save_filename);
-    if exist(header_save_path,'file') && ~forceReload
-        h = load(header_save_path);
-        if ~isfield(h,'MAT_VERSION') || h.MAT_VERSION ~= MAT_VERSION
-            [tsq_struct,extras] = TDT_readTankBlockHeader(c_or_tank_path,blockNr,true);
-        else
-            tsq_struct = h.tsq_struct;
-            extras     = h.extras;
-        end
-        %NOTE: This MUST be updated before setting persistent variables
-        extras.fStruct = fStruct;
-        
-        %Set persistent variables here ...
-        tsqStructPersistent = tsq_struct;
-        extrasPersistent    = extras;
-        tsqPathPersistent   = fStruct.header_path;
-        
-        tsq_struct = filterTSQforEvent(tsq_struct,extras,eventGet);
-        return
-    end
-    createFolderIfNoExist(header_save_root);
-end
-
-if isCheck
-    tsq_struct = false;
-    extras     = [];
-    return
-end
-
-
 %READING THE FILE
 %=========================================================
-fid = fopen(fStruct.header_path,'r');
+fid = fopen(obj.file_path,'r');
 %Assumption: header is small, so read the entire thing
 words = fread(fid,[WORDS_PER_ENTRY inf],'*uint32');
 fclose(fid);
 
 %WTF, FOUND ONE WITH ONE EVENT AFTERWARDS
+%TODO: replace 2 with event name
 if words(3,end-1) == 2
     words(:,end) = [];
 end
 
-%HANDLING EVENTS, GROUPING BY NAME
-%========================================================
-% reshape list of raw words into a matrix 10 x nEntries
-% words = reshape(words,[WORDS_PER_ENTRY nWords/WORDS_PER_ENTRY]);
-
-%This, along with saving, is the slow part
-%[evNameValues,I,J] = unique_2011b(words(3,:),'first');
 evNameValues = words(3,:);
 xs = sort(evNameValues);
 n  = find(diff(xs) ~= 0);
@@ -272,9 +172,7 @@ temp = struct(...
 %    'sort_code',    [],...
 
 
-%Retrieval of notes for channel size ...
-%------------------------------------------------------
-notes = TDT_getNotes(c_or_tank_path,blockNr);
+
 
 for iEvent = 1:n_events
     curNameValue = uniqueEvNameValues(iEvent);
@@ -283,7 +181,7 @@ for iEvent = 1:n_events
     %2  - Type
     %9  - Data Foramt
     %10 - Fs
-    tempType               = TDT_eventTypeToString(words(2,mask_I(1)));
+    tempType               = tdt.eventTypeToString(words(2,mask_I(1)));
     temp(iEvent).tdt_type  = tempType{1};
     temp(iEvent).data_type = DATA_NAMES{words(9,mask_I(1))+1}; %they use 0 based, switching to 1 based
     temp(iEvent).fs        = typecast(words(10,mask_I(1)),'single');
@@ -330,17 +228,24 @@ end
 
 
 tsq_struct = temp;
-clear temp;
-extras = struct;
 
+n_stores = length(tsq_struct);
+all_stores_ca = cell(1,n_stores);
+
+for iStore = 1:n_stores
+   all_stores_ca{iStore} = tdt.block.store_info(tsq_struct(iStore)); 
+end
+
+all_stores = [all_stores_ca{:}];
 
 %removal of special events and specification of end time
 %What a hack :/
 if fixEndTime
+    error('This part was not translated yet')
     [~,tankName] = fileparts(fStruct.tank_path);
     formattedWarning('End time missing for %s, block %d',tankName,blockNr);
     
-    extras.special_events = tsq_struct(1:2);
+    obj.special_events = tsq_struct(1:2);
     tsq_struct(1:2) = [];
     
     maxTime = 0;
@@ -362,41 +267,18 @@ if fixEndTime
     endTime = maxTime;
 else
     endTime   = typecast(words(5:6,end),'double');
-    extras.special_events = tsq_struct(1:3);
-    tsq_struct(1:3) = [];
+    obj.special_events = all_stores(1:3);
+    all_stores(1:3) = [];
 end
-
 
 %Specification of the other extras
-extras.tsq_names       = {tsq_struct.name};
-extras.fStruct         = fStruct;
-extras.start_time      = startTime;
-extras.end_time        = endTime;
-extras.tdt_types       = {tsq_struct.tdt_type};
-extras.notes           = notes;
-extras.nChunks         = size(words,2);
-extras.incompleteBlock = fixEndTime;
-extras.MAT_VERSION     = MAT_VERSION;
-
-tsqStructPersistent  = tsq_struct;
-extrasPersistent     = extras;
-tsqPathPersistent    = fStruct.header_path;
+obj.stores           = all_stores;
+obj.store_names      = {all_stores.name};
+obj.start_time       = startTime;
+obj.end_time         = endTime;
+obj.tdt_data_types   = {tsq_struct.tdt_type};
+obj.n_chunks         = size(words,2);
+obj.incomplete_block = fixEndTime;
 
 
-%-v6 - MAX SPEED!
-if ~isempty(header_save_path)
-    save(header_save_path,'tsq_struct','extras','MAT_VERSION','-v6')
-end
-
-tsq_struct = filterTSQforEvent(tsq_struct,extras,eventGet);
-
-end
-
-function tsq_struct = filterTSQforEvent(tsq_struct,extras,eventGet)
-if ~isempty(eventGet)
-    tsq_struct = tsq_struct(strcmp(extras.tsq_names,eventGet));
-    if isempty(tsq_struct)
-        error('The specified event: %s, doesn''t exist in the header file',eventGet)
-    end
-end
 end

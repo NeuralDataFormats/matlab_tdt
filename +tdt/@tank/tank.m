@@ -1,4 +1,4 @@
-classdef tank < handle
+classdef tank < sl.obj.display_class
     %
     %   Class:
     %   tdt.tank
@@ -12,9 +12,12 @@ classdef tank < handle
         function obj = tank(tank_path)
            %TODO: Can we resolve path using TDTs registry?
            obj.tank_path = tank_path;
+           %TODO: Get name
+           [~,obj.tank_name] = fileparts(tank_path);
         end
-        function readBlock(obj,block_number)
+        function block = getBlock(obj,block_number)
            %TODO: Implement this! 
+           block = tdt.block(obj,block_number);
         end
     end
     
