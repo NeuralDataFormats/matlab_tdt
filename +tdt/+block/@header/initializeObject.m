@@ -1,60 +1,12 @@
 function initializeObject(obj,notes)
-
-% OUTPUTS
-% =========================================================================
-% tsq_struct - (structure array) OR (false) OR (structure)
-%   .name       : name of the event
-%   .nChannels  : # of channels (for things with data)
-%   .tdt_type   : TDT's data type, Snip, Stream, etc
-%   .data_type  : class of data (Matlab style), 'int8', 'single', etc
-%   .fs         : Accurate sampling frequency
-%   .timeStamps : time stamps in seconds since start of block
-%   .values     : values associated with each timestamp (events only, not snips)
-%   .nValuesAtChunk     : # of values to read at each data chunk
-%   .nByteOffsetToChunk : # of bytes to skip before reading data chunk
-%   .channelIDOfChunk   : Channel ID of all data at a particular data chunk
-%   .sortCodes          : Sort code values for 'TankSort'
-%   .sortCodeIndex      : index of the snip events for reading sort code files
-%   .chanPresentMask    : whether or not a snip channel has data
 %
-% extras - (structure)
-%   .special_events     : same format as tsq_struct entries but for special
-%                         TDT events (known entries, 0001 -> length of file, 0002 -> start time
-%                         0003 -> end time
-%   .tsq_names          : SAME AS {tsq_struct.name}
-%   .fStruct            : first output from TDT_getBlockFiles
-%   .startTime          : start time of block in unix time
-%   .endTime            : end time "                "
-%   .tdt_types          : SAME AS {tsq_struct.tdt_type}
-%   .notes              : output from TDT_getNotes
-%   .nChunks            :
+%   tdt.block.header.initializeObject
+%
+%   TODO: Finish new documentation of this particular file ...
+%
+%   
 %
 %
-%   EXAMPLE: tsq_struct(#)
-%                   name: 'eNeu'
-%              nChannels: 100
-%               tdt_type: 'Snip'
-%              data_type: 'single'
-%                     fs: 2.4414e+004
-%             timeStamps: [1x145023 double]
-%                 values: []
-%         nValuesAtChunk: [1x145023 uint32]
-%     nByteOffsetToChunk: [1x145023 int64]
-%       channelIDOfChunk: [1x145023 uint16]
-%              sortCodes: [1x145023 uint16]
-%          sortCodeIndex: [1x145023 double]
-%        chanPresentMask: [1x100 logical]
-%
-%   EXAMPLE USAGE
-%   =======================================================================
-%   [C,C2]  = setupConvPathForCat('Fruity');
-%   blockNr = 12;
-%   [tsq_struct,extras] = TDT_readTankBlockHeader(C,blockNr)
-%
-%   See Also:
-%   TDT_getBlockFiles
-%   TDT_eventTypeToString
-%   TDT_getNotes
 
 
 %CONSTANTS
@@ -67,11 +19,8 @@ ADDL_SORT_CODE_OFFSET = 1023; %amount to correct for sort codes
 %   Index - 0 based
 %   0 -> 1025 NOPE
 %   1 -> 1025 NOPE
-%   
 
 
-%DATA_TYPES = uint32(0:4);  %NOTE: 0 based indexing, we'll take the value
-%from the file and add 1 later
 DATA_NAMES      = {'single' 'uint32' 'int16' 'int8' 'double'};
 SIZE_SC_FACTOR  = {1        1         2      4      0.5};
 
