@@ -4,7 +4,8 @@ classdef block < sl.obj.display_class
     %   tdt.block
     %
     %   A TDT block can generally be thought of as a trial, although it is
-    %   possible to run multiple "trials" within a single block.
+    %   possible to run multiple "trials" (as defined by the user) within 
+    %   a single block.
     
     properties
         block_number
