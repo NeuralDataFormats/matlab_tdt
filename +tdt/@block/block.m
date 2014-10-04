@@ -33,16 +33,12 @@ classdef block < sl.obj.display_class
             obj.notes  = tdt.block.notes(obj.paths.notes);
             obj.header = tdt.block.header(obj.paths.header,obj.notes);
         end
-        function store = getStore(obj,name)
-           mask = strcmp(name,obj.store_names);
-           if sum(mask) ~= 1
-               error('Singular match not found for store name: %s',name)
-           end
+        function store = getStore(obj,store_name)           
+           store_obj = obj.header.getStoreInfo(store_name);
            p = obj.paths;
-           store_obj = obj.stores(mask);
            switch store_obj.tdt_type
                case 'Stream'
-                   store = tdt.stream(store_obj,p.header,p.data);
+                   store = tdt.stream(store_obj,p.header,p.data,obj.block_number);
                otherwise
                    error('TDT type store type: %s, not yet implemented',store_obj.tdt_type)
            end

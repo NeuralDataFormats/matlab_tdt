@@ -4,7 +4,7 @@ function initializeObject(obj,notes)
 %
 %   TODO: Finish new documentation of this particular file ...
 %
-%   
+%   This code is also quite old and should probably be cleaned up
 %
 %
 
@@ -84,7 +84,7 @@ end
 
 %We move everything into a cell array, could keep as a character matrix
 %since everything is 4 characters
-evNames = cellfun(@(x) char(typecast(x,'uint8')),num2cell(uniqueEvNameValues),'UniformOutput',false);
+evNames = cellfun(@(x) char(typecast(x,'uint8')),num2cell(uniqueEvNameValues),'un',0);
 
 %SPECIAL EVENTS HANDLING
 %===========================================================

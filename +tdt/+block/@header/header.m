@@ -1,7 +1,7 @@
 classdef header < handle
     %
     %   Class:
-    %   tdt.header
+    %   tdt.block.header
     
     
     %==========================================================================
@@ -21,24 +21,49 @@ classdef header < handle
     %10  single - Fs            - sampling frequency
     
     properties
-       file_path
-       stores
-       start_time
-       end_time
-       n_chunks
-       incomplete_block
-       store_names
-       tdt_data_types
+        file_path
+        stores   %tdt.block.store_info
+        start_time  %(s, unix time)
+        end_time    %(s, unix time)
+        n_chunks %This is really more for internal use rather than being all
+        %that useful to the user.
+        incomplete_block %I think this happens when the block crashes
+        store_names %This order matches that of 'stores'
+        tdt_data_types
+    end
+    
+    properties (Dependent)
+        block_duration %(s)
+    end
+    
+    methods
+        function value = get.block_duration(obj)
+            value = obj.end_time - obj.start_time;
+        end
     end
     
     properties
-       special_events 
+        special_events
     end
     
     methods
         function obj = header(tsq_path,notes)
-           obj.file_path = tsq_path;
-           obj.initializeObject(notes); 
+            obj.file_path = tsq_path;
+            
+            %tdt.block.header.initializeObject
+            obj.initializeObject(notes);
+        end
+        function store_info = getStoreInfo(obj,store_name)
+            %
+            %   store_info = obj.getStoreInfo(store_name)
+            %
+            %   Outputs:
+            %   --------
+            %   store_info: tdt.block.store_info
+            
+            %TODO: Include a check on existence
+            
+            store_info = obj.stores(strcmp(obj.store_names,store_name));
         end
     end
     
