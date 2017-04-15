@@ -62,10 +62,16 @@ classdef stream < handle
         end
         function data = getData(obj,varargin)
             %
+            %   data = getData(obj,varargin)
             %
             %    Optional Inputs:
             %    ----------------
-            %
+            %   as_object : logical (default true)
+            %   scale_value = [];
+            %   1:obj.n_channels;
+            %   in.as_double = true;
+            %   in.units = 'Unknown';
+            %   in.channel_labels = ''; %TODO: If numeric, change to string ..
             
             in.as_object = true;
             in.scale_value = [];
